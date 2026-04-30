@@ -1,8 +1,8 @@
 import MobileMenu from "./components/MobileMenu";
-import { sanityFetch } from "@/sanity/lib/live";
+import { client } from "@/sanity/lib/client";
 import { urlFor } from "@/sanity/lib/image";
 
-export const revalidate = 0;
+export const dynamic = "force-dynamic";
 
 // Replace heroImg with your own photo in /public once the Figma asset URL expires (7 days)
 const heroImg =
@@ -127,7 +127,7 @@ function ProjectImage({ project, className }: { project: PortfolioProject; class
 }
 
 export default async function Home() {
-  const { data: portfolioProjects } = await sanityFetch({ query: PORTFOLIO_QUERY }) as { data: PortfolioProject[] };
+  const portfolioProjects = await client.fetch<PortfolioProject[]>(PORTFOLIO_QUERY, {}, { cache: "no-store" });
 
   return (
     <main>

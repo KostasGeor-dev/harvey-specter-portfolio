@@ -1,4 +1,3 @@
-import React from 'react'
 import { defineField, defineType } from 'sanity'
 
 export const project = defineType({
@@ -85,15 +84,6 @@ export const project = defineType({
     },
   ],
   preview: {
-    select: { title: 'title', subtitle: 'category', media: 'coverImage', imageUrl: 'imageUrl' },
-    prepare({ title, subtitle, media, imageUrl }: { title: string; subtitle: string; media: unknown; imageUrl: string | null }) {
-      return {
-        title,
-        subtitle,
-        media: media || (imageUrl
-          ? React.createElement('img', { src: imageUrl, style: { width: '100%', height: '100%', objectFit: 'cover' } })
-          : undefined),
-      }
-    },
+    select: { title: 'title', subtitle: 'category', media: 'coverImage' },
   },
 })

@@ -1,6 +1,6 @@
-"use client";
-
-import { useState } from "react";
+import MobileMenu from "./components/MobileMenu";
+import { sanityFetch } from "@/sanity/lib/live";
+import { urlFor } from "@/sanity/lib/image";
 
 // Replace heroImg with your own photo in /public once the Figma asset URL expires (7 days)
 const heroImg =
@@ -39,30 +39,6 @@ const services = [
     title: "Photography",
     desc: "Placeholder description of this service. Explain the value you provide and the outcomes clients can expect. Keep it to two or three sentences.",
     img: "https://www.figma.com/api/mcp/asset/e27b45d1-8899-43bc-8130-cfdfc31481d2",
-  },
-];
-
-// Replace portfolio images in /public once Figma asset URLs expire (7 days)
-const portfolioProjects = [
-  {
-    title: "Surfers paradise",
-    tags: ["Social Media", "Photography"],
-    img: "https://www.figma.com/api/mcp/asset/652bd38e-b599-4e71-91c5-b8c3122f3021",
-  },
-  {
-    title: "Cyberpunk caffe",
-    tags: ["Social Media", "Photography"],
-    img: "https://www.figma.com/api/mcp/asset/62be2e91-7645-4c4d-bf3e-f78293c4d2c4",
-  },
-  {
-    title: "Agency 976",
-    tags: ["Social Media", "Photography"],
-    img: "https://www.figma.com/api/mcp/asset/62f3e35a-3f0d-4bc7-8b35-c4a61d74a799",
-  },
-  {
-    title: "Minimal Playground",
-    tags: ["Social Media", "Photography"],
-    img: "https://www.figma.com/api/mcp/asset/1a637a20-621a-4b29-bebb-165ecf562662",
   },
 ];
 
@@ -128,62 +104,31 @@ const newsItems = [
 
 const navLinks = ["About", "Services", "Projects", "News", "Contact"];
 
-export default function Home() {
-  const [menuOpen, setMenuOpen] = useState(false);
+const PORTFOLIO_QUERY = `*[_type == "project"] | order(order asc) {
+  _id,
+  title,
+  "slug": slug.current,
+  tags,
+  coverImage,
+  imageUrl
+}`;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PortfolioProject = { _id: string; title: string; slug: string | null; tags: string[] | null; coverImage: any; imageUrl: string | null };
+
+function ProjectImage({ project, className }: { project: PortfolioProject; className?: string }) {
+  const src = project.coverImage
+    ? urlFor(project.coverImage).url()
+    : project.imageUrl ?? null;
+  if (!src) return <div className="absolute inset-0 bg-[#c8c8c8]" />;
+  return <img src={src} alt={project.title} className={className} />;
+}
+
+export default async function Home() {
+  const { data: portfolioProjects } = await sanityFetch({ query: PORTFOLIO_QUERY }) as { data: PortfolioProject[] };
 
   return (
     <main>
-      {/* ── Mobile full-screen menu overlay ──────────────────────── */}
-      {menuOpen && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col px-4 py-6 md:hidden">
-          {/* Top row: logo + close */}
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-base text-white [letter-spacing:-0.64px]">
-              H.Studio
-            </span>
-            <button
-              onClick={() => setMenuOpen(false)}
-              aria-label="Close menu"
-              className="p-1 text-white"
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              >
-                <line x1="4" y1="4" x2="20" y2="20" />
-                <line x1="20" y1="4" x2="4" y2="20" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Nav links */}
-          <nav className="flex flex-col gap-8 mt-16">
-            {navLinks.map((link) => (
-              <a
-                key={link}
-                href={`#${link.toLowerCase()}`}
-                onClick={() => setMenuOpen(false)}
-                className="text-white text-5xl font-medium [letter-spacing:-2px] capitalize leading-none"
-              >
-                {link}
-              </a>
-            ))}
-          </nav>
-
-          {/* Bottom CTA */}
-          <div className="mt-auto">
-            <button className="flex items-center justify-center bg-white text-black text-sm font-medium rounded-3xl px-4 py-3 [letter-spacing:-0.56px]">
-              Let&apos;s talk
-            </button>
-          </div>
-        </div>
-      )}
-
       <section className="relative overflow-hidden h-screen">
         {/* Full-bleed background photo */}
         <img
@@ -219,26 +164,8 @@ export default function Home() {
               Let&apos;s talk
             </button>
 
-            {/* Mobile hamburger */}
-            <button
-              onClick={() => setMenuOpen(true)}
-              className="md:hidden p-1"
-              aria-label="Open menu"
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              >
-                <line x1="3" y1="7" x2="21" y2="7" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="17" x2="21" y2="17" />
-              </svg>
-            </button>
+            {/* Mobile hamburger + overlay */}
+            <MobileMenu />
           </nav>
 
           {/* ── Hero body ────────────────────────────────────────── */}
@@ -558,11 +485,11 @@ export default function Home() {
         <div className="flex flex-col gap-6 lg:hidden">
 
           {portfolioProjects.map((p) => (
-            <div key={p.title} className="flex flex-col gap-[10px]">
+            <div key={p._id} className="flex flex-col gap-[10px]">
               <div className="relative h-[390px] overflow-hidden">
-                <img src={p.img} alt={p.title} className="absolute inset-0 size-full object-cover" />
+                <ProjectImage project={p} className="absolute inset-0 size-full object-cover" />
                 <div className="absolute bottom-4 left-4 flex gap-3">
-                  {p.tags.map((tag) => (
+                  {(p.tags ?? []).map((tag) => (
                     <span key={tag} className="backdrop-blur-[10px] bg-white/30 px-2 py-1 rounded-3xl text-[14px] font-medium text-[#111] [letter-spacing:-0.56px] whitespace-nowrap">
                       {tag}
                     </span>
@@ -608,57 +535,61 @@ export default function Home() {
           {/* Left column: justify-between distributes cards + CTA vertically */}
           <div className="flex-1 flex flex-col justify-between">
 
-            {/* Surfers Paradise */}
-            <div className="flex flex-col gap-[10px]">
-              <div className="relative h-[744px] overflow-hidden">
-                <img src={portfolioProjects[0].img} alt={portfolioProjects[0].title} className="absolute inset-0 size-full object-cover" />
-                <div className="absolute bottom-4 left-4 flex gap-3">
-                  {portfolioProjects[0].tags.map((tag) => (
-                    <span key={tag} className="backdrop-blur-[10px] bg-white/30 px-2 py-1 rounded-3xl text-[14px] font-medium text-[#111] [letter-spacing:-0.56px] whitespace-nowrap">
-                      {tag}
-                    </span>
-                  ))}
+            {/* Item 0 */}
+            {portfolioProjects[0] && (
+              <div className="flex flex-col gap-[10px]">
+                <div className="relative h-[744px] overflow-hidden">
+                  <ProjectImage project={portfolioProjects[0]} className="absolute inset-0 size-full object-cover" />
+                  <div className="absolute bottom-4 left-4 flex gap-3">
+                    {(portfolioProjects[0].tags ?? []).map((tag) => (
+                      <span key={tag} className="backdrop-blur-[10px] bg-white/30 px-2 py-1 rounded-3xl text-[14px] font-medium text-[#111] [letter-spacing:-0.56px] whitespace-nowrap">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="font-black text-[36px] uppercase text-black leading-[1.1] [letter-spacing:-1.44px] whitespace-nowrap">
+                    {portfolioProjects[0].title}
+                  </p>
+                  <div className="shrink-0 size-8">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                      <circle cx="16" cy="16" r="15.5" stroke="#111111" strokeWidth="1" />
+                      <path d="M12 20L20 12" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" />
+                      <path d="M14 12H20V18" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between">
-                <p className="font-black text-[36px] uppercase text-black leading-[1.1] [letter-spacing:-1.44px] whitespace-nowrap">
-                  {portfolioProjects[0].title}
-                </p>
-                <div className="shrink-0 size-8">
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                    <circle cx="16" cy="16" r="15.5" stroke="#111111" strokeWidth="1" />
-                    <path d="M12 20L20 12" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M14 12H20V18" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              </div>
-            </div>
+            )}
 
-            {/* Cyberpunk Caffe */}
-            <div className="flex flex-col gap-[10px]">
-              <div className="relative h-[699px] overflow-hidden">
-                <img src={portfolioProjects[1].img} alt={portfolioProjects[1].title} className="absolute inset-0 size-full object-cover" />
-                <div className="absolute bottom-4 left-4 flex gap-3">
-                  {portfolioProjects[1].tags.map((tag) => (
-                    <span key={tag} className="backdrop-blur-[10px] bg-white/30 px-2 py-1 rounded-3xl text-[14px] font-medium text-[#111] [letter-spacing:-0.56px] whitespace-nowrap">
-                      {tag}
-                    </span>
-                  ))}
+            {/* Item 1 */}
+            {portfolioProjects[1] && (
+              <div className="flex flex-col gap-[10px]">
+                <div className="relative h-[699px] overflow-hidden">
+                  <ProjectImage project={portfolioProjects[1]} className="absolute inset-0 size-full object-cover" />
+                  <div className="absolute bottom-4 left-4 flex gap-3">
+                    {(portfolioProjects[1].tags ?? []).map((tag) => (
+                      <span key={tag} className="backdrop-blur-[10px] bg-white/30 px-2 py-1 rounded-3xl text-[14px] font-medium text-[#111] [letter-spacing:-0.56px] whitespace-nowrap">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="font-black text-[36px] uppercase text-black leading-[1.1] [letter-spacing:-1.44px] whitespace-nowrap">
+                    {portfolioProjects[1].title}
+                  </p>
+                  <div className="shrink-0 size-8">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                      <circle cx="16" cy="16" r="15.5" stroke="#111111" strokeWidth="1" />
+                      <path d="M12 20L20 12" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" />
+                      <path d="M14 12H20V18" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between">
-                <p className="font-black text-[36px] uppercase text-black leading-[1.1] [letter-spacing:-1.44px] whitespace-nowrap">
-                  {portfolioProjects[1].title}
-                </p>
-                <div className="shrink-0 size-8">
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                    <circle cx="16" cy="16" r="15.5" stroke="#111111" strokeWidth="1" />
-                    <path d="M12 20L20 12" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M14 12H20V18" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* CTA box */}
             <div className="relative flex items-center gap-3 w-[465px] px-6 py-3">
@@ -681,57 +612,61 @@ export default function Home() {
           {/* Right column: offset 240px from top, 117px gap between cards */}
           <div className="flex-1 flex flex-col gap-[117px] pt-[240px]">
 
-            {/* Agency 976 */}
-            <div className="flex flex-col gap-[10px]">
-              <div className="relative h-[699px] overflow-hidden">
-                <img src={portfolioProjects[2].img} alt={portfolioProjects[2].title} className="absolute inset-0 size-full object-cover" />
-                <div className="absolute bottom-4 left-4 flex gap-3">
-                  {portfolioProjects[2].tags.map((tag) => (
-                    <span key={tag} className="backdrop-blur-[10px] bg-white/30 px-2 py-1 rounded-3xl text-[14px] font-medium text-[#111] [letter-spacing:-0.56px] whitespace-nowrap">
-                      {tag}
-                    </span>
-                  ))}
+            {/* Item 2 */}
+            {portfolioProjects[2] && (
+              <div className="flex flex-col gap-[10px]">
+                <div className="relative h-[699px] overflow-hidden">
+                  <ProjectImage project={portfolioProjects[2]} className="absolute inset-0 size-full object-cover" />
+                  <div className="absolute bottom-4 left-4 flex gap-3">
+                    {(portfolioProjects[2].tags ?? []).map((tag) => (
+                      <span key={tag} className="backdrop-blur-[10px] bg-white/30 px-2 py-1 rounded-3xl text-[14px] font-medium text-[#111] [letter-spacing:-0.56px] whitespace-nowrap">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="font-black text-[36px] uppercase text-black leading-[1.1] [letter-spacing:-1.44px] whitespace-nowrap">
+                    {portfolioProjects[2].title}
+                  </p>
+                  <div className="shrink-0 size-8">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                      <circle cx="16" cy="16" r="15.5" stroke="#111111" strokeWidth="1" />
+                      <path d="M12 20L20 12" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" />
+                      <path d="M14 12H20V18" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between">
-                <p className="font-black text-[36px] uppercase text-black leading-[1.1] [letter-spacing:-1.44px] whitespace-nowrap">
-                  {portfolioProjects[2].title}
-                </p>
-                <div className="shrink-0 size-8">
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                    <circle cx="16" cy="16" r="15.5" stroke="#111111" strokeWidth="1" />
-                    <path d="M12 20L20 12" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M14 12H20V18" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              </div>
-            </div>
+            )}
 
-            {/* Minimal Playground */}
-            <div className="flex flex-col gap-[10px]">
-              <div className="relative h-[744px] overflow-hidden">
-                <img src={portfolioProjects[3].img} alt={portfolioProjects[3].title} className="absolute inset-0 size-full object-cover" />
-                <div className="absolute bottom-4 left-4 flex gap-3">
-                  {portfolioProjects[3].tags.map((tag) => (
-                    <span key={tag} className="backdrop-blur-[10px] bg-white/30 px-2 py-1 rounded-3xl text-[14px] font-medium text-[#111] [letter-spacing:-0.56px] whitespace-nowrap">
-                      {tag}
-                    </span>
-                  ))}
+            {/* Item 3 */}
+            {portfolioProjects[3] && (
+              <div className="flex flex-col gap-[10px]">
+                <div className="relative h-[744px] overflow-hidden">
+                  <ProjectImage project={portfolioProjects[3]} className="absolute inset-0 size-full object-cover" />
+                  <div className="absolute bottom-4 left-4 flex gap-3">
+                    {(portfolioProjects[3].tags ?? []).map((tag) => (
+                      <span key={tag} className="backdrop-blur-[10px] bg-white/30 px-2 py-1 rounded-3xl text-[14px] font-medium text-[#111] [letter-spacing:-0.56px] whitespace-nowrap">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="font-black text-[36px] uppercase text-black leading-[1.1] [letter-spacing:-1.44px] whitespace-nowrap">
+                    {portfolioProjects[3].title}
+                  </p>
+                  <div className="shrink-0 size-8">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                      <circle cx="16" cy="16" r="15.5" stroke="#111111" strokeWidth="1" />
+                      <path d="M12 20L20 12" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" />
+                      <path d="M14 12H20V18" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between">
-                <p className="font-black text-[36px] uppercase text-black leading-[1.1] [letter-spacing:-1.44px] whitespace-nowrap">
-                  {portfolioProjects[3].title}
-                </p>
-                <div className="shrink-0 size-8">
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                    <circle cx="16" cy="16" r="15.5" stroke="#111111" strokeWidth="1" />
-                    <path d="M12 20L20 12" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M14 12H20V18" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              </div>
-            </div>
+            )}
 
           </div>
 

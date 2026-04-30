@@ -2,6 +2,8 @@ import MobileMenu from "./components/MobileMenu";
 import { sanityFetch } from "@/sanity/lib/live";
 import { urlFor } from "@/sanity/lib/image";
 
+export const revalidate = 30;
+
 // Replace heroImg with your own photo in /public once the Figma asset URL expires (7 days)
 const heroImg =
   "https://www.figma.com/api/mcp/asset/cac4d7b4-3f4a-487c-b365-0f582df81394";

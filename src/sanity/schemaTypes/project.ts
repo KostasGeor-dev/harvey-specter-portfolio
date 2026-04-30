@@ -1,3 +1,4 @@
+import React from 'react'
 import { defineField, defineType } from 'sanity'
 
 export const project = defineType({
@@ -84,6 +85,15 @@ export const project = defineType({
     },
   ],
   preview: {
-    select: { title: 'title', subtitle: 'category', media: 'coverImage' },
+    select: { title: 'title', subtitle: 'category', media: 'coverImage', imageUrl: 'imageUrl' },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    prepare: (({ title, subtitle, media, imageUrl }: any) => ({
+      title,
+      subtitle,
+      media: media || (imageUrl
+        ? React.createElement('img', { src: imageUrl, style: { width: '100%', height: '100%', objectFit: 'cover' } })
+        : undefined),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    })) as any,
   },
 })

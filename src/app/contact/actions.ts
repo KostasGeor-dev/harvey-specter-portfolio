@@ -8,8 +8,6 @@ export type ContactState = {
   error?: string;
 } | null;
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 // ── In-memory rate limiter (3 submissions / IP / minute) ──────────────────────
 // Resets per process; sufficient for a portfolio site.
 const _attempts = new Map<string, { count: number; reset: number }>();
@@ -81,14 +79,22 @@ export async function sendContactMessage(
   }
 
   // ── Send ─────────────────────────────────────────────────────────────────────
+  if (!process.env.RESEND_API_KEY) {
+    console.error("RESEND_API_KEY is not set");
+    return { success: false, error: "Email service is not configured. Please contact us directly." };
+  }
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const to = process.env.CONTACT_EMAIL ?? "k.geor73@gmail.com";
 
-  const { error } = await resend.emails.send({
-    from: "H.Studio Contact <onboarding@resend.dev>",
-    to:   [to],
-    replyTo: email,
-    subject: `New message from ${name} — H.Studio`,
-    html: `
+  let sendResult: Awaited<ReturnType<typeof resend.emails.send>>;
+  try {
+    sendResult = await resend.emails.send({
+      from: "H.Studio Contact <onboarding@resend.dev>",
+      to:   [to],
+      replyTo: email,
+      subject: `New message from ${name} — H.Studio`,
+      html: `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -160,10 +166,14 @@ export async function sendContactMessage(
   </table>
 </body>
 </html>`,
-  });
+    });
+  } catch (err) {
+    console.error("Resend unexpected error:", err);
+    return { success: false, error: "Failed to send message. Please try again." };
+  }
 
-  if (error) {
-    console.error("Resend error:", error);
+  if (sendResult.error) {
+    console.error("Resend error:", sendResult.error);
     return { success: false, error: "Failed to send message. Please try again." };
   }
 

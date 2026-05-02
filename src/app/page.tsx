@@ -511,19 +511,19 @@ export default async function Home() {
         <div className="flex items-start flex-1 min-w-0 max-w-[1020px]">
 
           {/* Card 1 */}
-          <NewsCard img={newsItems[0].img} text={newsItems[0].text} />
+          <NewsCard img={newsItems[0].img} text={newsItems[0].text} href={newsItems[0].href} category={newsItems[0].category} />
 
           {/* Divider */}
           <div className="w-px self-stretch bg-black/15 mx-[31px]" />
 
           {/* Card 2 — staggered 120px lower */}
-          <NewsCard img={newsItems[1].img} text={newsItems[1].text} className="pt-[120px]" />
+          <NewsCard img={newsItems[1].img} text={newsItems[1].text} href={newsItems[1].href} category={newsItems[1].category} className="pt-[120px]" />
 
           {/* Divider */}
           <div className="w-px self-stretch bg-black/15 mx-[31px]" />
 
           {/* Card 3 */}
-          <NewsCard img={newsItems[2].img} text={newsItems[2].text} />
+          <NewsCard img={newsItems[2].img} text={newsItems[2].text} href={newsItems[2].href} category={newsItems[2].category} />
 
         </div>
       </section>

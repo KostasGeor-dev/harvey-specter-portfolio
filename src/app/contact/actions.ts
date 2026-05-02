@@ -173,7 +173,7 @@ export async function sendContactMessage(
   }
 
   if (sendResult.error) {
-    console.error("Resend error:", sendResult.error);
+    console.error("Resend error:", JSON.stringify(sendResult.error));
     return { success: false, error: "Failed to send message. Please try again." };
   }
 

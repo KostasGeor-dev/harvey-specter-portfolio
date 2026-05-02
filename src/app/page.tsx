@@ -1,6 +1,29 @@
-import MobileMenu from "./components/MobileMenu";
+import type { Metadata } from "next";
+import HeroSection from "./components/HeroSection";
+import NewsSlider from "./components/NewsSlider";
+import CTAButton from "./components/CTAButton";
+import NavBar from "./components/NavBar";
+import PortraitReveal from "./components/PortraitReveal";
+import ParallaxX from "./components/ParallaxX";
+import IdentityText from "./components/IdentityText";
+import BlurImage from "./components/BlurImage";
+import ServiceRow from "./components/ServiceRow";
+import ProjectCard from "./components/ProjectCard";
+import TestimonialCard from "./components/TestimonialCard";
+import NewsCard from "./components/NewsCard";
+import FooterReveal from "./components/FooterReveal";
 import { client } from "@/sanity/lib/client";
 import { urlFor } from "@/sanity/lib/image";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "Harvey Specter — Creative Director & Photographer",
+    description: "Chicago-based creative director and photographer with 12+ years building bold brands.",
+    url: "/",
+    type: "website",
+  },
+};
 
 export const dynamic = "force-dynamic";
 
@@ -88,23 +111,6 @@ const testimonials = [
   },
 ];
 
-// Replace news images in /public once Figma asset URLs expire (7 days)
-const newsItems = [
-  {
-    img: "https://www.figma.com/api/mcp/asset/3ef76b42-b723-48e8-ab42-ca20a2ea3f49",
-    text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-  },
-  {
-    img: "https://www.figma.com/api/mcp/asset/b6cfa92b-3c3f-4ed5-a6dc-fd5de3c18c35",
-    text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-  },
-  {
-    img: "https://www.figma.com/api/mcp/asset/32209d3a-c8bf-4455-8c36-740c063b1239",
-    text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-  },
-];
-
-const navLinks = ["About", "Services", "Projects", "News", "Contact"];
 
 const PORTFOLIO_QUERY = `*[_type == "project"] | order(order asc) {
   _id,
@@ -115,113 +121,44 @@ const PORTFOLIO_QUERY = `*[_type == "project"] | order(order asc) {
   imageUrl
 }`;
 
+const NEWS_QUERY = `*[_type == "post"] | order(order asc)[0...3] {
+  _id,
+  title,
+  "slug": slug.current,
+  excerpt,
+  coverImage,
+  imageUrl,
+  category
+}`;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type PortfolioProject = { _id: string; title: string; slug: string | null; tags: string[] | null; coverImage: any; imageUrl: string | null };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type NewsPost = { _id: string; title: string; slug: string | null; excerpt: string; coverImage: any; imageUrl: string | null; category: string | null };
 
-function ProjectImage({ project, className }: { project: PortfolioProject; className?: string }) {
-  const src = project.coverImage
-    ? urlFor(project.coverImage).url()
-    : project.imageUrl ?? null;
-  if (!src) return <div className="absolute inset-0 bg-[#c8c8c8]" />;
-  return <img src={src} alt={project.title} className={className} />;
-}
 
 export default async function Home() {
-  const portfolioProjects = await client.fetch<PortfolioProject[]>(PORTFOLIO_QUERY, {}, { cache: "no-store" });
+  const [portfolioProjects, newsPosts] = await Promise.all([
+    client.fetch<PortfolioProject[]>(PORTFOLIO_QUERY, {}, { cache: "no-store" }),
+    client.fetch<NewsPost[]>(NEWS_QUERY, {}, { cache: "no-store" }),
+  ]);
+
+  const newsItems = newsPosts.map((p) => ({
+    img: p.coverImage ? urlFor(p.coverImage).width(900).url() : (p.imageUrl ?? ""),
+    text: p.excerpt,
+    category: p.category ?? undefined,
+    href: p.slug ? `/news/${p.slug}` : undefined,
+  }));
 
   return (
-    <main>
-      <section className="relative overflow-hidden h-screen">
-        {/* Full-bleed background photo */}
-        <img
-          src={heroImg}
-          alt=""
-          aria-hidden
-          className="absolute inset-0 w-full h-full object-cover object-top pointer-events-none select-none"
-        />
-
-        {/* Frosted glass overlay at the bottom third */}
-        <div className="absolute bottom-0 left-0 right-0 h-[55vh] md:h-[41vh] [backdrop-filter:blur(10px)] bg-[rgba(217,217,217,0.01)] [mask-image:linear-gradient(to_top,black_60%,transparent)]" />
-
-        {/* All content sits above the image via DOM order (no z-index so mix-blend-mode works) */}
-        <div className="relative h-full flex flex-col px-4 md:px-8 justify-between md:justify-start md:gap-[28vh] pb-6 md:pb-0">
-
-          {/* ── Navbar ───────────────────────────────────────────── */}
-          <nav className="flex items-center justify-between py-6">
-            <span className="font-semibold text-base text-black [letter-spacing:-0.64px]">
-              H.Studio
-            </span>
-
-            {/* Desktop links */}
-            <div className="hidden md:flex items-center gap-14 font-semibold text-base text-black [letter-spacing:-0.64px]">
-              {navLinks.map((link) => (
-                <a key={link} href={`#${link.toLowerCase()}`}>
-                  {link}
-                </a>
-              ))}
-            </div>
-
-            {/* Desktop CTA */}
-            <button className="hidden md:flex items-center justify-center bg-black text-white text-sm font-medium rounded-3xl px-4 py-3 [letter-spacing:-0.56px]">
-              Let&apos;s talk
-            </button>
-
-            {/* Mobile hamburger + overlay */}
-            <MobileMenu />
-          </nav>
-
-          {/* ── Hero body ────────────────────────────────────────── */}
-          <div className="flex flex-col items-center md:items-start gap-6 md:gap-0 w-full">
-
-            {/* Label + heading */}
-            <div className="flex flex-col items-center md:items-start w-full md:pb-[15px]">
-              <div className="flex items-center justify-center md:justify-start px-[18px] w-full md:mb-[-15px]">
-                <p className="font-mono text-sm text-white mix-blend-overlay uppercase leading-[1.1]">
-                  [ Hello i&apos;m ]
-                </p>
-              </div>
-              <h1
-                className="
-                  text-[25vw] md:text-[13.5vw]
-                  font-medium text-white mix-blend-overlay
-                  [letter-spacing:-0.07em]
-                  leading-[0.8] md:leading-[1.1]
-                  text-center capitalize whitespace-pre-wrap md:whitespace-nowrap w-full
-                "
-              >
-                {"Harvey   Specter"}
-              </h1>
-            </div>
-
-            {/* Tagline + CTA — left on mobile, right on desktop */}
-            <div className="flex flex-col items-start md:items-end w-full">
-              <div className="flex flex-col gap-[17px] w-[293px] md:w-[294px]">
-                <p className="text-[14px] text-[#1f1f1f] [letter-spacing:-0.56px] uppercase leading-[1.1] italic">
-                  <span className="font-bold">H.Studio is a </span>
-                  <span className="font-normal">full-service</span>
-                  <span className="font-bold">
-                    {" "}
-                    creative studio creating beautiful digital experiences and
-                    products. We are an{" "}
-                  </span>
-                  <span className="font-normal">award winning</span>
-                  <span className="font-bold">
-                    {" "}
-                    desing and art group specializing in branding, web design
-                    and engineering.
-                  </span>
-                </p>
-                <button className="w-fit flex items-center justify-center bg-black text-white text-sm font-medium rounded-3xl px-4 py-3 [letter-spacing:-0.56px]">
-                  Let&apos;s talk
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+    <>
+      <NavBar />
+      <main className="relative bg-white z-[1]">
+      <HeroSection heroImg={heroImg} />
 
       {/* ── About / Identity Section ─────────────────────────── */}
-      <section className="overflow-x-hidden px-4 py-12 md:px-8 md:py-[120px]">
+      <section id="about" className="overflow-x-hidden px-4 py-12 md:px-8 md:py-[120px]">
+        <h2 className="sr-only">About</h2>
         {/* Header: industry label + divider */}
         <div className="flex flex-col gap-3 items-end mb-6">
           <p className="font-mono text-[14px] text-[#1f1f1f] uppercase leading-[1.1] text-right">
@@ -230,77 +167,7 @@ export default async function Home() {
           <div className="w-full h-px bg-[#1f1f1f]" />
         </div>
 
-        {/* ── Desktop: staggered typographic layout ── */}
-        <div className="hidden md:flex flex-col gap-2">
-          <div className="flex gap-3 items-start">
-            <p className="font-light text-[9.375vw] text-black leading-[0.84] [letter-spacing:-0.08em] uppercase whitespace-nowrap">
-              {"A creative director   /"}
-            </p>
-            <span className="font-mono text-[14px] text-[#1f1f1f] leading-[1.1]">
-              001
-            </span>
-          </div>
-          <p className="font-light text-[9.375vw] text-black leading-[0.84] [letter-spacing:-0.08em] uppercase whitespace-nowrap pl-[22.3%]">
-            Photographer
-          </p>
-          <div className="flex justify-end">
-            <p className="font-light text-[9.375vw] text-black leading-[0.84] [letter-spacing:-0.08em] uppercase whitespace-nowrap">
-              {"Born "}
-              <span
-                className="font-playfair italic font-normal"
-                style={{ fontVariationSettings: "'opsz' 12, 'wdth' 100" }}
-              >
-                {"&"}
-              </span>
-              {" raised"}
-            </p>
-          </div>
-          <p className="font-light text-[9.375vw] text-black leading-[0.84] [letter-spacing:-0.08em] uppercase whitespace-nowrap">
-            on the south side
-          </p>
-          <div className="flex items-baseline justify-end gap-3">
-            <p className="font-light text-[9.375vw] text-black leading-[0.84] [letter-spacing:-0.08em] uppercase whitespace-nowrap">
-              of chicago.
-            </p>
-            <span className="font-mono text-[14px] text-[#1f1f1f] leading-[1.1] whitespace-nowrap">
-              [ creative freelancer ]
-            </span>
-          </div>
-        </div>
-
-        {/* ── Mobile: centered layout ── */}
-        <div className="md:hidden flex flex-col gap-3 items-center text-center">
-          <span className="font-mono text-[14px] text-[#1f1f1f] leading-[1.1]">
-            001
-          </span>
-          <div className="flex flex-col gap-2 items-center uppercase">
-            <p className="font-light text-[8.5vw] text-black leading-[0.84] [letter-spacing:-0.08em] whitespace-nowrap">
-              {"A creative director   /"}
-            </p>
-            <p className="font-light text-[8.5vw] text-black leading-[0.84] [letter-spacing:-0.08em] whitespace-nowrap">
-              Photographer
-            </p>
-            <p className="font-light text-[8.5vw] text-black leading-[0.84] [letter-spacing:-0.08em] whitespace-nowrap">
-              {"Born "}
-              <span
-                className="font-playfair italic font-normal"
-                style={{ fontVariationSettings: "'opsz' 12, 'wdth' 100" }}
-              >
-                {"&"}
-              </span>
-              {" raised"}
-            </p>
-            <p className="font-light text-[8.5vw] text-black leading-[0.84] [letter-spacing:-0.08em] whitespace-nowrap">
-              on the south side
-            </p>
-            <p className="font-light text-[8.5vw] text-black leading-[0.84] [letter-spacing:-0.08em] whitespace-nowrap">
-              of chicago.
-            </p>
-          </div>
-          <span className="font-mono text-[14px] text-[#1f1f1f] leading-[1.1]">
-            [ creative freelancer ]
-          </span>
-        </div>
+        <IdentityText />
       </section>
 
       {/* ── About Section ──────────────────────────────────────── */}
@@ -322,33 +189,37 @@ export default async function Home() {
           {/* Right group pushed to the far right, text + portrait bottom-aligned */}
           <div className="ml-auto flex gap-8 items-end">
             {/* Bracketed bio text — fixed responsive width */}
-            <div className="relative p-6 shrink-0 w-[220px] lg:w-[340px] xl:w-[460px]">
+            <ParallaxX className="relative p-6 shrink-0 w-[220px] lg:w-[340px] xl:w-[460px]">
               <div className="absolute top-0 left-0 size-4 border-t border-l border-[#1f1f1f]" />
               <div className="absolute bottom-0 left-0 size-4 border-b border-l border-[#1f1f1f]" />
               <div className="absolute top-0 right-0 size-4 border-t border-r border-[#1f1f1f]" />
               <div className="absolute bottom-0 right-0 size-4 border-b border-r border-[#1f1f1f]" />
               <p className="text-[14px] text-[#1f1f1f] leading-[1.3] [letter-spacing:-0.56px]">
-                Placeholder paragraph one. This is where you introduce yourself
-                — your background, your passion for your craft, and what drives
-                you creatively. Two to three sentences work best here.
-                Placeholder paragraph two. Here you can describe your technical
-                approach, how you collaborate with clients, or what sets your
-                work apart from others in your field.
+                I&apos;m a creative director and photographer based in Chicago,
+                with over 12 years of turning bold ideas into visual identities
+                that stick. My passion lives at the intersection of storytelling
+                and strategy — I believe great design doesn&apos;t just catch
+                the eye, it earns trust and moves people to act.
               </p>
-            </div>
+              <p className="text-[14px] text-[#1f1f1f] leading-[1.3] [letter-spacing:-0.56px] mt-3">
+                I work alongside every client as a genuine partner, taking the
+                time to understand your audience, your goals, and the story you
+                need to tell. Where others deliver off-the-shelf solutions, I
+                build from the ground up — combining photography, design, and
+                code to craft work that doesn&apos;t just look remarkable today,
+                but stays relevant tomorrow.
+              </p>
+            </ParallaxX>
 
             {/* 002 label + portrait */}
             <div className="flex gap-6 items-start shrink-0">
               <p className="font-mono text-[14px] text-[#1f1f1f] uppercase leading-[1.1]">
                 002
               </p>
-              <div className="relative overflow-hidden w-[200px] lg:w-[280px] xl:w-[436px] aspect-[436/614]">
-                <img
-                  src={aboutPortrait}
-                  alt=""
-                  className="absolute inset-0 size-full object-cover pointer-events-none select-none"
-                />
-              </div>
+              <PortraitReveal
+                src={aboutPortrait}
+                className="w-[200px] lg:w-[280px] xl:w-[436px] aspect-[436/614]"
+              />
             </div>
           </div>
         </div>
@@ -369,23 +240,24 @@ export default async function Home() {
             <div className="absolute top-0 right-0 size-4 border-t border-r border-[#1f1f1f]" />
             <div className="absolute bottom-0 right-0 size-4 border-b border-r border-[#1f1f1f]" />
             <p className="text-[14px] text-[#1f1f1f] leading-[1.3] [letter-spacing:-0.56px]">
-              Placeholder paragraph one. This is where you introduce yourself —
-              your background, your passion for your craft, and what drives you
-              creatively. Two to three sentences work best here. Placeholder
-              paragraph two. Here you can describe your technical approach, how
-              you collaborate with clients, or what sets your work apart from
-              others in your field.
+              I&apos;m a creative director and photographer based in Chicago,
+              with over 12 years of turning bold ideas into visual identities
+              that stick. My passion lives at the intersection of storytelling
+              and strategy — I believe great design doesn&apos;t just catch the
+              eye, it earns trust and moves people to act.
+            </p>
+            <p className="text-[14px] text-[#1f1f1f] leading-[1.3] [letter-spacing:-0.56px] mt-3">
+              I work alongside every client as a genuine partner, taking the
+              time to understand your audience, your goals, and the story you
+              need to tell. Where others deliver off-the-shelf solutions, I
+              build from the ground up — combining photography, design, and code
+              to craft work that doesn&apos;t just look remarkable today, but
+              stays relevant tomorrow.
             </p>
           </div>
 
           {/* Portrait image */}
-          <div className="relative overflow-hidden w-full aspect-[422/594]">
-            <img
-              src={aboutPortrait}
-              alt=""
-              className="absolute inset-0 size-full object-cover pointer-events-none select-none"
-            />
-          </div>
+          <PortraitReveal src={aboutPortrait} className="w-full aspect-[422/594]" />
         </div>
       </section>
 
@@ -395,20 +267,20 @@ export default async function Home() {
         Mobile: 500px tall, focus shifted right (object-[70%]) to keep
         the face + camera in frame instead of showing empty sky on the left.
       */}
-      <section className="relative overflow-hidden h-[500px] md:h-[900px]">
-        <img
+      <section data-nav-theme="dark" className="relative overflow-hidden h-[500px] md:h-[900px]">
+        <BlurImage
           src={fullBleedPhoto}
-          alt=""
           className="absolute inset-0 size-full object-cover object-[70%_50%] md:object-center pointer-events-none select-none"
         />
       </section>
 
       {/* ── Services Section ──────────────────────────────────── */}
-      <section className="bg-black px-4 py-12 md:px-8 md:py-20">
+      <section id="services" data-nav-theme="dark" className="bg-black px-4 py-12 md:px-8 md:py-20">
+        <h2 className="sr-only">Services</h2>
         <div className="flex flex-col gap-8 md:gap-12">
 
           {/* [ services ] label */}
-          <p className="font-mono text-[14px] text-white uppercase leading-[1.1]">
+          <p className="font-mono text-[14px] text-white uppercase leading-[1.1]" aria-hidden="true">
             [ services ]
           </p>
 
@@ -421,36 +293,7 @@ export default async function Home() {
           {/* Service rows */}
           <div className="flex flex-col gap-12">
             {services.map((s) => (
-              <div key={s.num} className="flex flex-col gap-[9px]">
-
-                {/* Number + divider */}
-                <div className="flex flex-col gap-[9px]">
-                  <p className="font-mono text-[14px] text-white uppercase leading-[1.1]">
-                    [ {s.num} ]
-                  </p>
-                  <div className="w-full h-px bg-white/30" />
-                </div>
-
-                {/* Content: title left | description + thumb right on lg+ */}
-                <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-start">
-                  <p className="font-bold italic text-[36px] text-white uppercase leading-[1.1] [letter-spacing:-1.44px] whitespace-nowrap">
-                    {s.title}
-                  </p>
-                  <div className="flex flex-col gap-4 lg:flex-row lg:gap-6 lg:items-start lg:shrink-0">
-                    <p className="text-[14px] text-white leading-[1.3] [letter-spacing:-0.56px] lg:w-[340px] xl:w-[393px]">
-                      {s.desc}
-                    </p>
-                    <div className="relative size-[151px] overflow-hidden shrink-0">
-                      <img
-                        src={s.img}
-                        alt={s.title}
-                        className="absolute inset-0 size-full object-cover pointer-events-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-              </div>
+              <ServiceRow key={s.num} s={s} />
             ))}
           </div>
 
@@ -458,7 +301,8 @@ export default async function Home() {
       </section>
 
       {/* ─── Selected Work ─── */}
-      <section className="px-4 py-12 md:px-8 md:py-20">
+      <section id="projects" className="px-4 py-12 md:px-8 md:py-20">
+        <h2 className="sr-only">Selected Work</h2>
 
         {/* Header */}
         <div className="mb-8 lg:mb-[61px]">
@@ -487,30 +331,12 @@ export default async function Home() {
         <div className="flex flex-col gap-6 lg:hidden">
 
           {portfolioProjects.map((p) => (
-            <div key={p._id} className="flex flex-col gap-[10px]">
-              <div className="relative h-[390px] overflow-hidden">
-                <ProjectImage project={p} className="absolute inset-0 size-full object-cover" />
-                <div className="absolute bottom-4 left-4 flex gap-3">
-                  {(p.tags ?? []).map((tag) => (
-                    <span key={tag} className="backdrop-blur-[10px] bg-white/30 px-2 py-1 rounded-3xl text-[14px] font-medium text-[#111] [letter-spacing:-0.56px] whitespace-nowrap">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="font-black text-[24px] uppercase text-black leading-[1.1] [letter-spacing:-0.96px] whitespace-nowrap">
-                  {p.title}
-                </p>
-                <div className="shrink-0 size-8">
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                    <circle cx="16" cy="16" r="15.5" stroke="#111111" strokeWidth="1" />
-                    <path d="M12 20L20 12" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M14 12H20V18" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              </div>
-            </div>
+            <ProjectCard
+              key={p._id}
+              project={p}
+              imageClassName="h-[390px]"
+              titleClassName="text-[24px] [letter-spacing:-0.96px]"
+            />
           ))}
 
           {/* CTA box */}
@@ -523,9 +349,9 @@ export default async function Home() {
               <p className="italic text-[14px] text-[#1f1f1f] leading-[1.3] [letter-spacing:-0.56px]">
                 Discover how my creativity transforms ideas into impactful digital experiences — schedule a call with me to get started.
               </p>
-              <button className="self-start bg-black text-white text-[14px] font-medium px-4 py-3 rounded-3xl [letter-spacing:-0.56px] whitespace-nowrap">
+              <CTAButton className="self-start bg-black text-white text-[14px] font-medium px-4 py-3 rounded-3xl [letter-spacing:-0.56px] whitespace-nowrap border border-black">
                 Let&apos;s talk
-              </button>
+              </CTAButton>
             </div>
           </div>
 
@@ -539,58 +365,20 @@ export default async function Home() {
 
             {/* Item 0 */}
             {portfolioProjects[0] && (
-              <div className="flex flex-col gap-[10px]">
-                <div className="relative h-[744px] overflow-hidden">
-                  <ProjectImage project={portfolioProjects[0]} className="absolute inset-0 size-full object-cover" />
-                  <div className="absolute bottom-4 left-4 flex gap-3">
-                    {(portfolioProjects[0].tags ?? []).map((tag) => (
-                      <span key={tag} className="backdrop-blur-[10px] bg-white/30 px-2 py-1 rounded-3xl text-[14px] font-medium text-[#111] [letter-spacing:-0.56px] whitespace-nowrap">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="font-black text-[36px] uppercase text-black leading-[1.1] [letter-spacing:-1.44px] whitespace-nowrap">
-                    {portfolioProjects[0].title}
-                  </p>
-                  <div className="shrink-0 size-8">
-                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                      <circle cx="16" cy="16" r="15.5" stroke="#111111" strokeWidth="1" />
-                      <path d="M12 20L20 12" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" />
-                      <path d="M14 12H20V18" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+              <ProjectCard
+                project={portfolioProjects[0]}
+                imageClassName="h-[744px]"
+                titleClassName="text-[36px] [letter-spacing:-1.44px]"
+              />
             )}
 
             {/* Item 1 */}
             {portfolioProjects[1] && (
-              <div className="flex flex-col gap-[10px]">
-                <div className="relative h-[699px] overflow-hidden">
-                  <ProjectImage project={portfolioProjects[1]} className="absolute inset-0 size-full object-cover" />
-                  <div className="absolute bottom-4 left-4 flex gap-3">
-                    {(portfolioProjects[1].tags ?? []).map((tag) => (
-                      <span key={tag} className="backdrop-blur-[10px] bg-white/30 px-2 py-1 rounded-3xl text-[14px] font-medium text-[#111] [letter-spacing:-0.56px] whitespace-nowrap">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="font-black text-[36px] uppercase text-black leading-[1.1] [letter-spacing:-1.44px] whitespace-nowrap">
-                    {portfolioProjects[1].title}
-                  </p>
-                  <div className="shrink-0 size-8">
-                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                      <circle cx="16" cy="16" r="15.5" stroke="#111111" strokeWidth="1" />
-                      <path d="M12 20L20 12" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" />
-                      <path d="M14 12H20V18" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+              <ProjectCard
+                project={portfolioProjects[1]}
+                imageClassName="h-[699px]"
+                titleClassName="text-[36px] [letter-spacing:-1.44px]"
+              />
             )}
 
             {/* CTA box */}
@@ -603,9 +391,9 @@ export default async function Home() {
                 <p className="italic text-[14px] text-[#1f1f1f] leading-[1.3] [letter-spacing:-0.56px]">
                   Discover how my creativity transforms ideas into impactful digital experiences — schedule a call with me to get started.
                 </p>
-                <button className="self-start bg-black text-white text-[14px] font-medium px-4 py-3 rounded-3xl [letter-spacing:-0.56px] whitespace-nowrap">
+                <CTAButton className="self-start bg-black text-white text-[14px] font-medium px-4 py-3 rounded-3xl [letter-spacing:-0.56px] whitespace-nowrap border border-black">
                   Let&apos;s talk
-                </button>
+                </CTAButton>
               </div>
             </div>
 
@@ -616,58 +404,20 @@ export default async function Home() {
 
             {/* Item 2 */}
             {portfolioProjects[2] && (
-              <div className="flex flex-col gap-[10px]">
-                <div className="relative h-[699px] overflow-hidden">
-                  <ProjectImage project={portfolioProjects[2]} className="absolute inset-0 size-full object-cover" />
-                  <div className="absolute bottom-4 left-4 flex gap-3">
-                    {(portfolioProjects[2].tags ?? []).map((tag) => (
-                      <span key={tag} className="backdrop-blur-[10px] bg-white/30 px-2 py-1 rounded-3xl text-[14px] font-medium text-[#111] [letter-spacing:-0.56px] whitespace-nowrap">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="font-black text-[36px] uppercase text-black leading-[1.1] [letter-spacing:-1.44px] whitespace-nowrap">
-                    {portfolioProjects[2].title}
-                  </p>
-                  <div className="shrink-0 size-8">
-                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                      <circle cx="16" cy="16" r="15.5" stroke="#111111" strokeWidth="1" />
-                      <path d="M12 20L20 12" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" />
-                      <path d="M14 12H20V18" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+              <ProjectCard
+                project={portfolioProjects[2]}
+                imageClassName="h-[699px]"
+                titleClassName="text-[36px] [letter-spacing:-1.44px]"
+              />
             )}
 
             {/* Item 3 */}
             {portfolioProjects[3] && (
-              <div className="flex flex-col gap-[10px]">
-                <div className="relative h-[744px] overflow-hidden">
-                  <ProjectImage project={portfolioProjects[3]} className="absolute inset-0 size-full object-cover" />
-                  <div className="absolute bottom-4 left-4 flex gap-3">
-                    {(portfolioProjects[3].tags ?? []).map((tag) => (
-                      <span key={tag} className="backdrop-blur-[10px] bg-white/30 px-2 py-1 rounded-3xl text-[14px] font-medium text-[#111] [letter-spacing:-0.56px] whitespace-nowrap">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="font-black text-[36px] uppercase text-black leading-[1.1] [letter-spacing:-1.44px] whitespace-nowrap">
-                    {portfolioProjects[3].title}
-                  </p>
-                  <div className="shrink-0 size-8">
-                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                      <circle cx="16" cy="16" r="15.5" stroke="#111111" strokeWidth="1" />
-                      <path d="M12 20L20 12" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" />
-                      <path d="M14 12H20V18" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+              <ProjectCard
+                project={portfolioProjects[3]}
+                imageClassName="h-[744px]"
+                titleClassName="text-[36px] [letter-spacing:-1.44px]"
+              />
             )}
 
           </div>
@@ -678,24 +428,12 @@ export default async function Home() {
 
       {/* ─── Testimonials — Mobile ─── */}
       <section className="px-4 py-16 lg:hidden">
-        <p className="font-medium text-[64px] text-black text-center leading-[0.8] [letter-spacing:-0.07em] capitalize mb-8">
+        <h2 className="font-medium text-[64px] text-black text-center leading-[0.8] [letter-spacing:-0.07em] capitalize mb-8">
           Testimonials
-        </p>
+        </h2>
         <div className="flex flex-col gap-4">
           {testimonials.map((t) => (
-            <div key={t.name} className="bg-[#f1f1f1] border border-[#ddd] rounded-[4px] p-6 flex flex-col gap-4">
-              <img
-                src={t.logo}
-                alt=""
-                style={{ width: t.logoW, height: t.logoH, objectFit: "contain" }}
-              />
-              <p className="text-[18px] text-[#1f1f1f] leading-[1.3] [letter-spacing:-0.04em]">
-                {t.text}
-              </p>
-              <p className="font-black text-[16px] text-black uppercase leading-[1.1] [letter-spacing:-0.04em] whitespace-nowrap">
-                {t.name}
-              </p>
-            </div>
+            <TestimonialCard key={t.name} t={t} />
           ))}
         </div>
       </section>
@@ -704,83 +442,60 @@ export default async function Home() {
       <section className="hidden lg:block relative overflow-hidden h-[987px]">
 
         {/* Lukas Weber — rendered first so heading layers on top of it */}
-        <div
-          className="absolute bg-[#f1f1f1] border border-[#ddd] rounded-[4px] p-6 flex flex-col gap-4 w-[353px]"
-          style={{ left: 676, top: 272, transform: "rotate(2.9deg)" }}
-        >
-          <img src={testimonials[1].logo} alt="" style={{ width: testimonials[1].logoW, height: testimonials[1].logoH, objectFit: "contain" }} />
-          <p className="text-[18px] text-[#1f1f1f] leading-[1.3] [letter-spacing:-0.04em]">{testimonials[1].text}</p>
-          <p className="font-black text-[16px] text-black uppercase leading-[1.1] [letter-spacing:-0.04em] whitespace-nowrap">{testimonials[1].name}</p>
-        </div>
+        <TestimonialCard
+          t={testimonials[1]}
+          rotation={parseFloat(testimonials[1].rot)}
+          className="absolute w-[353px]"
+          style={{ left: testimonials[1].dx, top: testimonials[1].dy }}
+        />
 
         {/* Giant centred heading — sits on top of Lukas, behind the other three */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <p className="font-medium text-[198px] text-black text-center leading-[1.1] [letter-spacing:-0.07em] capitalize whitespace-nowrap">
+          <h2 className="font-medium text-[198px] text-black text-center leading-[1.1] [letter-spacing:-0.07em] capitalize whitespace-nowrap">
             Testimonials
-          </p>
+          </h2>
         </div>
 
         {/* Marko Stojković */}
-        <div
-          className="absolute bg-[#f1f1f1] border border-[#ddd] rounded-[4px] p-6 flex flex-col gap-4 w-[353px]"
-          style={{ left: 102, top: 142, transform: "rotate(-6.85deg)" }}
-        >
-          <img src={testimonials[0].logo} alt="" style={{ width: testimonials[0].logoW, height: testimonials[0].logoH, objectFit: "contain" }} />
-          <p className="text-[18px] text-[#1f1f1f] leading-[1.3] [letter-spacing:-0.04em]">{testimonials[0].text}</p>
-          <p className="font-black text-[16px] text-black uppercase leading-[1.1] [letter-spacing:-0.04em] whitespace-nowrap">{testimonials[0].name}</p>
-        </div>
+        <TestimonialCard
+          t={testimonials[0]}
+          rotation={parseFloat(testimonials[0].rot)}
+          className="absolute w-[353px]"
+          style={{ left: testimonials[0].dx, top: testimonials[0].dy }}
+        />
 
         {/* Sarah Jenkins */}
-        <div
-          className="absolute bg-[#f1f1f1] border border-[#ddd] rounded-[4px] p-6 flex flex-col gap-4 w-[353px]"
-          style={{ left: 305, top: 553, transform: "rotate(2.23deg)" }}
-        >
-          <img src={testimonials[2].logo} alt="" style={{ width: testimonials[2].logoW, height: testimonials[2].logoH, objectFit: "contain" }} />
-          <p className="text-[18px] text-[#1f1f1f] leading-[1.3] [letter-spacing:-0.04em]">{testimonials[2].text}</p>
-          <p className="font-black text-[16px] text-black uppercase leading-[1.1] [letter-spacing:-0.04em] whitespace-nowrap">{testimonials[2].name}</p>
-        </div>
+        <TestimonialCard
+          t={testimonials[2]}
+          rotation={parseFloat(testimonials[2].rot)}
+          className="absolute w-[353px]"
+          style={{ left: testimonials[2].dx, top: testimonials[2].dy }}
+        />
 
         {/* Sofia Martínez */}
-        <div
-          className="absolute bg-[#f1f1f1] border border-[#ddd] rounded-[4px] p-6 flex flex-col gap-4 w-[353px]"
-          style={{ left: 987, top: 546, transform: "rotate(-4.15deg)" }}
-        >
-          <img src={testimonials[3].logo} alt="" style={{ width: testimonials[3].logoW, height: testimonials[3].logoH, objectFit: "contain" }} />
-          <p className="text-[18px] text-[#1f1f1f] leading-[1.3] [letter-spacing:-0.04em]">{testimonials[3].text}</p>
-          <p className="font-black text-[16px] text-black uppercase leading-[1.1] [letter-spacing:-0.04em] whitespace-nowrap">{testimonials[3].name}</p>
-        </div>
+        <TestimonialCard
+          t={testimonials[3]}
+          rotation={parseFloat(testimonials[3].rot)}
+          className="absolute w-[353px]"
+          style={{ left: testimonials[3].dx, top: testimonials[3].dy }}
+        />
 
       </section>
 
+      {/* ─── News anchor (shared for mobile + desktop) ─── */}
+      <div id="news" />
+
       {/* ─── News — Mobile ─── */}
       <section className="bg-[#f3f3f3] px-4 py-16 lg:hidden">
-        <div className="font-light text-[32px] text-black uppercase leading-[0.86] [letter-spacing:-0.08em] mb-8">
+        <h2 className="font-light text-[32px] text-black uppercase leading-[0.86] [letter-spacing:-0.08em] mb-8">
           Keep up with my latest news &amp; achievements
-        </div>
-        {/* Horizontal scroll */}
-        <div className="overflow-x-auto -mx-4 px-4 pb-2">
-          <div className="flex gap-4">
-            {newsItems.map((item, i) => (
-              <div key={i} className="flex flex-col gap-4 w-[300px] shrink-0">
-                <div className="relative h-[398px] overflow-hidden">
-                  <img src={item.img} alt="" className="absolute inset-0 size-full object-cover pointer-events-none" />
-                </div>
-                <p className="text-[14px] text-[#1f1f1f] leading-[1.3] [letter-spacing:-0.56px]">{item.text}</p>
-                <div className="border-b border-black flex items-center gap-2.5 py-1 self-start">
-                  <span className="font-medium text-[14px] text-black [letter-spacing:-0.56px] whitespace-nowrap">Read more</span>
-                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                    <path d="M4 14L14 4" stroke="black" strokeWidth="1.2" strokeLinecap="round" />
-                    <path d="M6.5 4H14V11.5" stroke="black" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        </h2>
+        <NewsSlider items={newsItems} />
       </section>
 
       {/* ─── News — Desktop ─── */}
       <section className="hidden lg:flex items-end justify-between bg-[#f3f3f3] px-8 py-[120px]">
+        <h2 className="sr-only">News</h2>
 
         {/* Rotated sideways heading */}
         <div className="flex items-center justify-center w-[110px] h-[706px] shrink-0">
@@ -796,153 +511,121 @@ export default async function Home() {
         <div className="flex items-start flex-1 min-w-0 max-w-[1020px]">
 
           {/* Card 1 */}
-          <div className="flex-1 min-w-0 flex flex-col gap-4">
-            <div className="relative h-[469px] overflow-hidden">
-              <img src={newsItems[0].img} alt="" className="absolute inset-0 size-full object-cover pointer-events-none" />
-            </div>
-            <p className="text-[14px] text-[#1f1f1f] leading-[1.3] [letter-spacing:-0.56px]">{newsItems[0].text}</p>
-            <div className="border-b border-black flex items-center gap-2.5 py-1 self-start">
-              <span className="font-medium text-[14px] text-black [letter-spacing:-0.56px] whitespace-nowrap">Read more</span>
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M4 14L14 4" stroke="black" strokeWidth="1.2" strokeLinecap="round" />
-                <path d="M6.5 4H14V11.5" stroke="black" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          </div>
+          <NewsCard img={newsItems[0].img} text={newsItems[0].text} />
 
           {/* Divider */}
           <div className="w-px self-stretch bg-black/15 mx-[31px]" />
 
           {/* Card 2 — staggered 120px lower */}
-          <div className="flex-1 min-w-0 flex flex-col gap-4 pt-[120px]">
-            <div className="relative h-[469px] overflow-hidden">
-              <img src={newsItems[1].img} alt="" className="absolute inset-0 size-full object-cover pointer-events-none" />
-            </div>
-            <p className="text-[14px] text-[#1f1f1f] leading-[1.3] [letter-spacing:-0.56px]">{newsItems[1].text}</p>
-            <div className="border-b border-black flex items-center gap-2.5 py-1 self-start">
-              <span className="font-medium text-[14px] text-black [letter-spacing:-0.56px] whitespace-nowrap">Read more</span>
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M4 14L14 4" stroke="black" strokeWidth="1.2" strokeLinecap="round" />
-                <path d="M6.5 4H14V11.5" stroke="black" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          </div>
+          <NewsCard img={newsItems[1].img} text={newsItems[1].text} className="pt-[120px]" />
 
           {/* Divider */}
           <div className="w-px self-stretch bg-black/15 mx-[31px]" />
 
           {/* Card 3 */}
-          <div className="flex-1 min-w-0 flex flex-col gap-4">
-            <div className="relative h-[469px] overflow-hidden">
-              <img src={newsItems[2].img} alt="" className="absolute inset-0 size-full object-cover pointer-events-none" />
-            </div>
-            <p className="text-[14px] text-[#1f1f1f] leading-[1.3] [letter-spacing:-0.56px]">{newsItems[2].text}</p>
-            <div className="border-b border-black flex items-center gap-2.5 py-1 self-start">
-              <span className="font-medium text-[14px] text-black [letter-spacing:-0.56px] whitespace-nowrap">Read more</span>
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M4 14L14 4" stroke="black" strokeWidth="1.2" strokeLinecap="round" />
-                <path d="M6.5 4H14V11.5" stroke="black" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          </div>
+          <NewsCard img={newsItems[2].img} text={newsItems[2].text} />
 
         </div>
       </section>
 
       {/* ─── Footer ─── */}
-      <footer className="bg-black overflow-hidden">
+      </main>
 
-        {/* ── Top: CTA / Socials / Divider ── */}
-        <div className="px-4 pt-12 lg:px-8 lg:pt-[48px] flex flex-col gap-6 lg:gap-12">
+      <FooterReveal>
+        <footer id="contact" data-nav-theme="dark" className="bg-black overflow-hidden">
 
-          <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-start">
+          {/* ── Top: CTA / Socials / Divider ── */}
+          <div data-footer-item className="px-4 pt-12 lg:px-8 lg:pt-[48px] flex flex-col gap-6 lg:gap-12">
 
-            {/* CTA — shared across breakpoints */}
-            <div className="flex flex-col gap-3 lg:w-[298px]">
-              <p className="font-light italic text-[24px] text-white uppercase leading-[1.1] [letter-spacing:-0.96px]">
-                Have a{" "}
-                <span className="font-black not-italic">project</span>
-                {" "}in mind?
+            <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-start">
+
+              {/* CTA — shared across breakpoints */}
+              <div className="flex flex-col gap-3 lg:w-[298px]">
+                <p className="font-light italic text-[24px] text-white uppercase leading-[1.1] [letter-spacing:-0.96px]">
+                  Have a{" "}
+                  <span className="font-black not-italic">project</span>
+                  {" "}in mind?
+                </p>
+                <CTAButton variant="ghost" className="self-start border border-white text-white text-[14px] font-medium px-4 py-3 rounded-3xl [letter-spacing:-0.56px] whitespace-nowrap">
+                  Let&apos;s talk
+                </CTAButton>
+              </div>
+
+              {/* Mobile: all 4 socials stacked below CTA */}
+              <div className="lg:hidden flex flex-col gap-1 text-white text-[18px] uppercase leading-[1.1] [letter-spacing:-0.72px]">
+                <a href="#" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">Facebook</a>
+                <a href="#" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">Instagram</a>
+                <a href="#" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">X.com</a>
+                <a href="#" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">Linkedin</a>
+              </div>
+
+              {/* Desktop center col: Facebook / Instagram */}
+              <div className="hidden lg:block text-white text-[18px] uppercase leading-[1.1] [letter-spacing:-0.72px] text-center w-[298px]">
+                <a href="#" rel="noopener noreferrer" className="block hover:opacity-70 transition-opacity">Facebook</a>
+                <a href="#" rel="noopener noreferrer" className="block hover:opacity-70 transition-opacity">Instagram</a>
+              </div>
+
+              {/* Desktop right col: X.com / Linkedin */}
+              <div className="hidden lg:block text-white text-[18px] uppercase leading-[1.1] [letter-spacing:-0.72px] text-right w-[298px]">
+                <a href="#" rel="noopener noreferrer" className="block hover:opacity-70 transition-opacity">X.com</a>
+                <a href="#" rel="noopener noreferrer" className="block hover:opacity-70 transition-opacity">Linkedin</a>
+              </div>
+
+            </div>
+
+            {/* Divider */}
+            <div className="h-px bg-white/20 w-full" />
+
+          </div>
+
+          {/* ── Bottom: Desktop ── */}
+          <div data-footer-item className="hidden lg:flex items-end justify-between px-8 mt-[120px]">
+
+            {/* Clipped H.Studio logotype */}
+            <div className="relative overflow-hidden h-[219px] w-[1093px]">
+              {/* [Coded By Claude] rotated label at far left */}
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center justify-center h-[160px] w-[15px]">
+                <p className="-rotate-90 font-mono text-[14px] text-white uppercase whitespace-nowrap leading-[1.1]">
+                  [ Coded By Claude ]
+                </p>
+              </div>
+              {/* Giant name — vertically centred, top/bottom intentionally clipped */}
+              <p className="absolute left-0 top-1/2 -translate-y-1/2 font-semibold text-[290px] text-white leading-[0.8] [letter-spacing:-0.06em] capitalize whitespace-nowrap">
+                H.Studio
               </p>
-              <button className="self-start border border-white text-white text-[14px] font-medium px-4 py-3 rounded-3xl [letter-spacing:-0.56px] whitespace-nowrap">
-                Let&apos;s talk
-              </button>
             </div>
 
-            {/* Mobile: all 4 socials stacked below CTA */}
-            <div className="lg:hidden flex flex-col gap-1 text-white text-[18px] uppercase leading-[1.1] [letter-spacing:-0.72px]">
-              <p>Facebook</p>
-              <p>Instagram</p>
-              <p>X.com</p>
-              <p>Linkedin</p>
-            </div>
-
-            {/* Desktop center col: Facebook / Instagram */}
-            <div className="hidden lg:block text-white text-[18px] uppercase leading-[1.1] [letter-spacing:-0.72px] text-center w-[298px]">
-              <p>Facebook</p>
-              <p>Instagram</p>
-            </div>
-
-            {/* Desktop right col: X.com / Linkedin */}
-            <div className="hidden lg:block text-white text-[18px] uppercase leading-[1.1] [letter-spacing:-0.72px] text-right w-[298px]">
-              <p>X.com</p>
-              <p>Linkedin</p>
+            {/* Legal links — bottom-right */}
+            <div className="flex gap-[34px] pb-8 text-[12px] text-white uppercase leading-[1.1] [letter-spacing:-0.48px] whitespace-nowrap">
+              <a href="#" className="underline hover:opacity-70 transition-opacity">Licences</a>
+              <a href="#" className="underline hover:opacity-70 transition-opacity">Privacy policy</a>
             </div>
 
           </div>
 
-          {/* Divider */}
-          <div className="h-px bg-white/20 w-full" />
+          {/* ── Bottom: Mobile ── */}
+          <div data-footer-item className="lg:hidden px-4 mt-12 flex flex-col gap-4 overflow-hidden">
 
-        </div>
+            {/* Legal links centred */}
+            <div className="flex gap-[34px] justify-center text-[12px] text-white uppercase leading-[1.1] [letter-spacing:-0.48px] whitespace-nowrap">
+              <a href="#" className="underline hover:opacity-70 transition-opacity">Licences</a>
+              <a href="#" className="underline hover:opacity-70 transition-opacity">Privacy policy</a>
+            </div>
 
-        {/* ── Bottom: Desktop ── */}
-        <div className="hidden lg:flex items-end justify-between px-8 mt-[120px]">
-
-          {/* Clipped H.Studio logotype */}
-          <div className="relative overflow-hidden h-[219px] w-[1093px]">
-            {/* [Coded By Claude] rotated label at far left */}
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center justify-center h-[160px] w-[15px]">
-              <p className="-rotate-90 font-mono text-[14px] text-white uppercase whitespace-nowrap leading-[1.1]">
+            {/* [Coded By Claude] + H.Studio bleed */}
+            <div className="overflow-hidden">
+              <p className="font-mono text-[10px] text-white uppercase leading-[1.1] mb-3">
                 [ Coded By Claude ]
               </p>
+              <p className="font-semibold text-[91px] text-white leading-[0.8] [letter-spacing:-0.06em] capitalize whitespace-nowrap">
+                H.Studio
+              </p>
             </div>
-            {/* Giant name — vertically centred, top/bottom intentionally clipped */}
-            <p className="absolute left-0 top-1/2 -translate-y-1/2 font-semibold text-[290px] text-white leading-[0.8] [letter-spacing:-0.06em] capitalize whitespace-nowrap">
-              H.Studio
-            </p>
+
           </div>
 
-          {/* Legal links — bottom-right */}
-          <div className="flex gap-[34px] pb-8 text-[12px] text-white uppercase leading-[1.1] [letter-spacing:-0.48px] whitespace-nowrap">
-            <span className="underline">Licences</span>
-            <span className="underline">Privacy policy</span>
-          </div>
-
-        </div>
-
-        {/* ── Bottom: Mobile ── */}
-        <div className="lg:hidden px-4 mt-12 flex flex-col gap-4 overflow-hidden">
-
-          {/* Legal links centred */}
-          <div className="flex gap-[34px] justify-center text-[12px] text-white uppercase leading-[1.1] [letter-spacing:-0.48px] whitespace-nowrap">
-            <span className="underline">Licences</span>
-            <span className="underline">Privacy policy</span>
-          </div>
-
-          {/* [Coded By Claude] + H.Studio bleed */}
-          <div className="overflow-hidden">
-            <p className="font-mono text-[10px] text-white uppercase leading-[1.1] mb-3">
-              [ Coded By Claude ]
-            </p>
-            <p className="font-semibold text-[91px] text-white leading-[0.8] [letter-spacing:-0.06em] capitalize whitespace-nowrap">
-              H.Studio
-            </p>
-          </div>
-
-        </div>
-
-      </footer>
-    </main>
+        </footer>
+      </FooterReveal>
+    </>
   );
 }

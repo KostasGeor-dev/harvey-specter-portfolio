@@ -1,9 +1,9 @@
 import React from 'react'
 import { defineField, defineType } from 'sanity'
 
-export const project = defineType({
-  name: 'project',
-  title: 'Project',
+export const post = defineType({
+  name: 'post',
+  title: 'News & Articles',
   type: 'document',
   fields: [
     defineField({
@@ -24,13 +24,21 @@ export const project = defineType({
       title: 'Category',
       type: 'string',
       options: {
-        list: ['Branding', 'Web Design', 'Strategy', 'Campaign', 'Other'],
+        list: ['Award', 'Achievement', 'Feature', 'Project Update', 'Interview'],
       },
     }),
     defineField({
-      name: 'year',
-      title: 'Year',
-      type: 'number',
+      name: 'publishedAt',
+      title: 'Published At',
+      type: 'datetime',
+    }),
+    defineField({
+      name: 'excerpt',
+      title: 'Excerpt',
+      type: 'text',
+      rows: 3,
+      description: 'Short teaser shown on news cards (2–3 sentences).',
+      validation: (r) => r.required(),
     }),
     defineField({
       name: 'coverImage',
@@ -42,7 +50,7 @@ export const project = defineType({
       name: 'imageUrl',
       title: 'Image URL',
       type: 'string',
-      description: 'Fallback external image URL when no cover image is uploaded',
+      description: 'Fallback external image URL when no cover image is uploaded.',
       validation: (r) =>
         r.custom((val: string | undefined) => {
           if (!val) return true;
@@ -55,31 +63,10 @@ export const project = defineType({
         }),
     }),
     defineField({
-      name: 'summary',
-      title: 'Summary',
-      type: 'text',
-      rows: 3,
-    }),
-    defineField({
       name: 'body',
       title: 'Body',
       type: 'array',
       of: [{ type: 'block' }, { type: 'image', options: { hotspot: true } }],
-    }),
-    defineField({
-      name: 'tags',
-      title: 'Tags',
-      type: 'array',
-      of: [{ type: 'string' }],
-      options: {
-        list: ['Social Media', 'Photography', 'Branding', 'Web Design', 'Strategy', 'Campaign'],
-      },
-    }),
-    defineField({
-      name: 'featured',
-      title: 'Featured',
-      type: 'boolean',
-      initialValue: false,
     }),
     defineField({
       name: 'order',
@@ -92,6 +79,11 @@ export const project = defineType({
       title: 'Display Order',
       name: 'orderAsc',
       by: [{ field: 'order', direction: 'asc' }],
+    },
+    {
+      title: 'Newest First',
+      name: 'publishedAtDesc',
+      by: [{ field: 'publishedAt', direction: 'desc' }],
     },
   ],
   preview: {

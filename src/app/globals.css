@@ -10,3 +10,9 @@ body {
   background: #ffffff;
   color: #171717;
 }
+
+/* Keyboard focus ring — visible on all interactive elements when navigating by keyboard */
+:focus-visible {
+  outline: 2px solid #111111;
+  outline-offset: 2px;
+}

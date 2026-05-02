@@ -7,5 +7,6 @@ import { client } from './client'
 export const { sanityFetch, SanityLive } = defineLive({
   client,
   serverToken: process.env.SANITY_API_READ_TOKEN,
-  browserToken: process.env.SANITY_API_READ_TOKEN,
+  // browserToken omitted — public visitors do not need a token to read
+  // published content, and exposing it in the browser bundle is a security risk.
 });
